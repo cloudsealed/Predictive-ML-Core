@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/CloudSealed.ML.CLI/CloudSealed.ML.CLI.csproj" Id="eef867ec-ea7b-48fe-86b5-c17e42ae9e91" />
+  <Project Path="src/CloudSealed.ML.Engine/CloudSealed.ML.Engine.csproj" Id="f2980f63-6ffd-405a-a25b-1563fb5165ee" />
+  <Project Path="tests/CloudSealed.ML.Tests/CloudSealed.ML.Tests.csproj" Id="ca78b4ba-dbb5-409c-8a70-7e1f16ebe431" />
+</Solution>
