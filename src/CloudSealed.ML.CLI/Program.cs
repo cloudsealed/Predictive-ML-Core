@@ -1,74 +1,91 @@
-﻿using System;
-using System.IO;
-using CloudSealed.ML.Engine;
+using System.Text.Json;
 using CloudSealed.ML.Engine.Models;
+using CloudSealed.ML.Engine.Scoring;
 
-namespace CloudSealed.ML.CLI
+namespace CloudSealed.ML.CLI;
+
+// Roda a mesma análise do endpoint HTTP a partir de um arquivo JSON local, sem
+// subir servidor. Equivalente ao `cloudsealed-jit export.csv [--json]` do JIT.
+internal static class Program
 {
-    class Program
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        static void Main(string[] args)
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = true,
+    };
+
+    private static int Main(string[] args)
+    {
+        var positional = args.Where(a => a != "--json").ToArray();
+        if (positional.Length != 1)
         {
-            Console.WriteLine("==================================================");
-            Console.WriteLine(" CLOUDSEALED PREDICTIVE ML CORE - ENTERPRISE CLI  ");
-            Console.WriteLine("==================================================");
-
-            string dataPath = "telemetry_mock.csv";
-            GenerateMockData(dataPath);
-
-            Console.WriteLine("[SYS] Initializing MLContext and FastTree Regressor...");
-            var engine = new PredictiveHeuristicsEngine();
-
-            Console.WriteLine("[SYS] Training Model on historical low-level telemetry...");
-            engine.TrainModel(dataPath);
-            Console.WriteLine("[SYS] Model compiled and loaded into memory successfully.\n");
-
-            // Severe stress system simulation
-            var trafficSpike = new TelemetryData
-            {
-                ThreadContextSwitches = 15400f,
-                Gen2GcCollections = 4.5f,
-                IopsThrottleRate = 85.2f,
-                NetworkQueueLength = 1200f
-            };
-
-            Console.WriteLine("--- LOW-LEVEL INFERENCE AUDIT ---");
-            Console.WriteLine($"Telemetry -> ContextSwitches: {trafficSpike.ThreadContextSwitches}/s | Gen2 GC: {trafficSpike.Gen2GcCollections} | IOPS Throttle: {trafficSpike.IopsThrottleRate}% | NetQueue: {trafficSpike.NetworkQueueLength}");
-
-            var prediction = engine.Predict(trafficSpike);
-
-            Console.WriteLine($"[FORECAST] Predicted Latency: {Math.Round(prediction.PredictedLatency, 2)} ms");
-
-            if (prediction.PredictedLatency > 200)
-            {
-                Console.WriteLine("[CRITICAL] SLA Breach Imminent (200ms threshold crossed).");
-                Console.WriteLine("[ACTION] Triggering Node Scale-Out & Process Offloading Heuristics.");
-            }
-            else
-            {
-                Console.WriteLine("[OK] Infrastructure operating within acceptable parameters.");
-            }
-            Console.WriteLine("==================================================");
+            Console.Error.WriteLine("Uso: cloudsealed-predictive-ml <inventory.json> [--json]");
+            return 1;
         }
 
-        // Utility function to generate mock data for out-of-the-box execution
-        static void GenerateMockData(string path)
+        var inputPath = positional[0];
+        if (!File.Exists(inputPath))
         {
-            if (File.Exists(path)) return;
-            using var writer = new StreamWriter(path);
-            writer.WriteLine("ThreadContextSwitches,Gen2GcCollections,IopsThrottleRate,NetworkQueueLength,Latency");
-            var rand = new Random(42);
-            for (int i = 0; i < 1000; i++)
-            {
-                float ctx = rand.Next(1000, 20000);
-                float gc = (float)rand.NextDouble() * 5; // Low values, Gen2 GC is rare but highly penalizing
-                float iops = rand.Next(10, 100);
-                float net = rand.Next(10, 2000);
+            Console.Error.WriteLine($"Arquivo não encontrado: {inputPath}");
+            return 1;
+        }
 
-                // Latency penalty logic: GC and IOPS have high weight
-                float lat = (ctx * 0.01f) + (gc * 25.0f) + (iops * 1.5f) + (net * 0.05f) + rand.Next(-10, 10);
-                writer.WriteLine($"{ctx},{gc},{iops},{net},{lat}");
+        PredictArchitectureRequest? request;
+        try
+        {
+            var raw = File.ReadAllText(inputPath);
+            request = JsonSerializer.Deserialize<PredictArchitectureRequest>(raw, JsonOptions);
+        }
+        catch (JsonException ex)
+        {
+            Console.Error.WriteLine($"JSON inválido: {ex.Message}");
+            return 1;
+        }
+
+        if (request is null || string.IsNullOrWhiteSpace(request.CompanyName) || request.Systems is not { Count: > 0 })
+        {
+            Console.Error.WriteLine("companyName e systems[] são obrigatórios no JSON de entrada.");
+            return 1;
+        }
+
+        var response = new ArchitectureAnalyzer().Analyze(request);
+
+        if (args.Contains("--json"))
+        {
+            Console.WriteLine(JsonSerializer.Serialize(response, JsonOptions));
+            return 0;
+        }
+
+        PrintHumanReadable(request, response);
+        return 0;
+    }
+
+    private static void PrintHumanReadable(PredictArchitectureRequest request, PredictArchitectureResponse response)
+    {
+        Console.WriteLine($"Predictive-ML-Core — {request.CompanyName}");
+        Console.WriteLine(response.ArchitectureSummary);
+        Console.WriteLine();
+
+        foreach (var prediction in response.Predictions)
+        {
+            Console.WriteLine($"# {prediction.SystemName}");
+            Console.WriteLine($"  SPOF={prediction.RiskScores.SinglePointOfFailure} " +
+                $"Coupling={prediction.RiskScores.ExcessiveCoupling} " +
+                $"ScalabilityGap={prediction.RiskScores.ScalabilityGap}");
+
+            foreach (var finding in prediction.Findings)
+            {
+                Console.WriteLine($"  [{finding.Severity}] {finding.Title} — {finding.Description}");
+                Console.WriteLine($"    Remediação: {finding.Remediation}");
             }
+
+            foreach (var recommendation in prediction.Recommendations)
+            {
+                Console.WriteLine($"  Recomendação ({recommendation.Effort}): {recommendation.Title} — {recommendation.Description}");
+            }
+
+            Console.WriteLine();
         }
     }
 }
