@@ -47,6 +47,30 @@ public class RiskScores
     public int ScalabilityGap { get; set; }
 }
 
+// Uma regra que disparou e sua contribuição em pontos para um score de risco.
+// É o que torna o scoring auditável: cada ponto rastreável até um campo do
+// request e o motivo pelo qual pesa. É o diferencial explícito frente a um
+// modelo caixa-preta.
+public class RuleContribution
+{
+    public string Rule { get; set; } = string.Empty; // chave estável, ex.: "criticality=CRITICAL"
+
+    public int Points { get; set; } // pontos somados ao score da dimensão
+
+    public string Rationale { get; set; } = string.Empty; // por que essa regra pesa
+}
+
+// Decomposição, por dimensão de risco, das regras que produziram cada score.
+// O score final é min(soma dos pontos, 100) — a soma pode exceder o teto.
+public class ScoreBreakdown
+{
+    public List<RuleContribution> SinglePointOfFailure { get; set; } = new();
+
+    public List<RuleContribution> ExcessiveCoupling { get; set; } = new();
+
+    public List<RuleContribution> ScalabilityGap { get; set; } = new();
+}
+
 public class Finding
 {
     public string Title { get; set; } = string.Empty;
@@ -75,6 +99,10 @@ public class ArchitecturePrediction
 
     public RiskScores RiskScores { get; set; } = new();
 
+    // Opcional/aditivo ao contrato: decomposição rastreável de cada riskScore.
+    // Clients antigos ignoram; clients novos podem auditar o cálculo.
+    public ScoreBreakdown ScoreBreakdown { get; set; } = new();
+
     public List<Finding> Findings { get; set; } = new();
 
     public List<Recommendation> Recommendations { get; set; } = new();
@@ -87,4 +115,18 @@ public class PredictArchitectureResponse
     public string ArchitectureSummary { get; set; } = string.Empty;
 
     public int OverallArchitectureScore { get; set; }
+
+    // Proveniência: qual motor/método gerou este resultado. Persistido pelo
+    // consumidor junto dos findings para rastrear a origem em auditorias.
+    public string EngineVersion { get; set; } = EngineInfo.Version;
+
+    public string Method { get; set; } = EngineInfo.Method;
+}
+
+// Identidade do motor, embutida em toda resposta como proveniência.
+public static class EngineInfo
+{
+    public const string Version = "0.2.0";
+
+    public const string Method = "deterministic-rule-scoring";
 }

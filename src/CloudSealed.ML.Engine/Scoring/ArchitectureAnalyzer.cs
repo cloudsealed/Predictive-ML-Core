@@ -31,11 +31,22 @@ public class ArchitectureAnalyzer
         int thirdPartyCount,
         HistoricalMetrics? historicalMetrics)
     {
+        var (spof, spofBreakdown) = ScoreSpof(system);
+        var (coupling, couplingBreakdown) = ScoreCoupling(system, thirdPartyCount);
+        var (scalability, scalabilityBreakdown) = ScoreScalabilityGap(system, historicalMetrics);
+
         var risks = new RiskScores
         {
-            SinglePointOfFailure = ComputeSpof(system),
-            ExcessiveCoupling = ComputeCoupling(system, thirdPartyCount),
-            ScalabilityGap = ComputeScalabilityGap(system, historicalMetrics),
+            SinglePointOfFailure = spof,
+            ExcessiveCoupling = coupling,
+            ScalabilityGap = scalability,
+        };
+
+        var breakdown = new ScoreBreakdown
+        {
+            SinglePointOfFailure = spofBreakdown,
+            ExcessiveCoupling = couplingBreakdown,
+            ScalabilityGap = scalabilityBreakdown,
         };
 
         var findings = new List<Finding>();
@@ -111,66 +122,161 @@ public class ArchitectureAnalyzer
         {
             SystemName = system.Name,
             RiskScores = risks,
+            ScoreBreakdown = breakdown,
             Findings = findings,
             Recommendations = recommendations,
         };
     }
 
-    private static int ComputeSpof(SystemInput system)
+    // Cada Score* devolve o score (0-100, com teto) e a lista de regras que o
+    // produziram. score == min(soma dos pontos, MaxRiskScore).
+    private static int Total(List<RuleContribution> contributions) =>
+        Math.Min(contributions.Sum(c => c.Points), RiskRules.MaxRiskScore);
+
+    private static (int Score, List<RuleContribution> Breakdown) ScoreSpof(SystemInput system)
     {
-        var score = RiskRules.SpofBaseByCriticality(system.Criticality) + RiskRules.SpofModifierByType(system.Type);
-        return Math.Min(score, RiskRules.MaxRiskScore);
+        var b = new List<RuleContribution>();
+
+        var basePts = RiskRules.SpofBaseByCriticality(system.Criticality);
+        if (basePts > 0)
+        {
+            b.Add(new RuleContribution
+            {
+                Rule = $"criticality={system.Criticality}",
+                Points = basePts,
+                Rationale = "O impacto de uma falha cresce com a criticidade declarada do sistema.",
+            });
+        }
+
+        var typePts = RiskRules.SpofModifierByType(system.Type);
+        if (typePts > 0)
+        {
+            b.Add(new RuleContribution
+            {
+                Rule = $"type={system.Type}",
+                Points = typePts,
+                Rationale = system.Type switch
+                {
+                    "DATABASE" => "Estado é mais caro de replicar que um serviço stateless.",
+                    "THIRD_PARTY_SERVICE" => "Dependência de terceiro está fora do seu controle e sem fallback declarado.",
+                    _ => "Serviço de aplicação/API adiciona risco moderado de instância única.",
+                },
+            });
+        }
+
+        return (Total(b), b);
     }
 
-    private static int ComputeCoupling(SystemInput system, int thirdPartyCount)
+    private static (int Score, List<RuleContribution> Breakdown) ScoreCoupling(SystemInput system, int thirdPartyCount)
     {
-        var score = system.PublicFacing
-            ? (string.IsNullOrWhiteSpace(system.AuthMethod) ? RiskRules.CouplingPublicNoAuth : RiskRules.CouplingPublicWithAuth)
-            : RiskRules.CouplingInternalBase;
+        var b = new List<RuleContribution>();
+
+        if (system.PublicFacing && string.IsNullOrWhiteSpace(system.AuthMethod))
+        {
+            b.Add(new RuleContribution
+            {
+                Rule = "publicFacing=true,authMethod=null",
+                Points = RiskRules.CouplingPublicNoAuth,
+                Rationale = "Exposição pública sem autenticação declarada é superfície de ataque direta.",
+            });
+        }
+        else if (system.PublicFacing)
+        {
+            b.Add(new RuleContribution
+            {
+                Rule = "publicFacing=true,authMethod=set",
+                Points = RiskRules.CouplingPublicWithAuth,
+                Rationale = "Exposição pública com autenticação ainda amplia a superfície de integração.",
+            });
+        }
+        else
+        {
+            b.Add(new RuleContribution
+            {
+                Rule = "publicFacing=false",
+                Points = RiskRules.CouplingInternalBase,
+                Rationale = "Base mínima de acoplamento para qualquer sistema interno.",
+            });
+        }
 
         if (system.Type == "THIRD_PARTY_SERVICE")
         {
-            score += RiskRules.CouplingThirdPartyType;
+            b.Add(new RuleContribution
+            {
+                Rule = "type=THIRD_PARTY_SERVICE",
+                Points = RiskRules.CouplingThirdPartyType,
+                Rationale = "Dependência de terceiro acopla o sistema a um contrato externo.",
+            });
         }
 
         var fanOutBeyondFree = Math.Max(0, thirdPartyCount - RiskRules.CouplingFanOutFreeCount);
         var fanOutBonus = Math.Min(fanOutBeyondFree * RiskRules.CouplingFanOutStep, RiskRules.CouplingFanOutCap);
-        score += fanOutBonus;
+        if (fanOutBonus > 0)
+        {
+            b.Add(new RuleContribution
+            {
+                Rule = $"orgThirdPartyFanOut={thirdPartyCount}",
+                Points = fanOutBonus,
+                Rationale = $"O inventário declara {thirdPartyCount} dependências de terceiro; " +
+                    "acoplamento em nível de organização acima do limiar livre.",
+            });
+        }
 
-        return Math.Min(score, RiskRules.MaxRiskScore);
+        return (Total(b), b);
     }
 
-    private static int ComputeScalabilityGap(SystemInput system, HistoricalMetrics? historicalMetrics)
+    private static (int Score, List<RuleContribution> Breakdown) ScoreScalabilityGap(
+        SystemInput system, HistoricalMetrics? historicalMetrics)
     {
-        var score = 0;
+        var b = new List<RuleContribution>();
 
         if (historicalMetrics is { P99LatencyMs: not null } or { AvgLatencyMs: not null })
         {
             if (historicalMetrics!.P99LatencyMs > RiskRules.P99LatencyThresholdMs)
             {
-                score += RiskRules.ScalabilityP99Weight;
+                b.Add(new RuleContribution
+                {
+                    Rule = $"p99LatencyMs>{RiskRules.P99LatencyThresholdMs}",
+                    Points = RiskRules.ScalabilityP99Weight,
+                    Rationale = "Latência de cauda (p99) acima do limiar indica saturação sob carga.",
+                });
             }
 
             if (historicalMetrics.P99LatencyMs is > 0 && historicalMetrics.AvgLatencyMs is > 0
                 && historicalMetrics.P99LatencyMs.Value / historicalMetrics.AvgLatencyMs.Value > RiskRules.TailRatioThreshold)
             {
-                score += RiskRules.ScalabilityTailRatioWeight;
+                b.Add(new RuleContribution
+                {
+                    Rule = $"p99/avg>{RiskRules.TailRatioThreshold}",
+                    Points = RiskRules.ScalabilityTailRatioWeight,
+                    Rationale = "Razão p99/média alta revela cauda pesada — gargalo que aparece nos picos.",
+                });
             }
         }
         else
         {
             if (system.Type == "DATABASE" && !string.IsNullOrWhiteSpace(system.DataSensitivity))
             {
-                score += RiskRules.ScalabilityDataSensitivityDbWeight;
+                b.Add(new RuleContribution
+                {
+                    Rule = "type=DATABASE,dataSensitivity=set (no metrics)",
+                    Points = RiskRules.ScalabilityDataSensitivityDbWeight,
+                    Rationale = "Banco com dados sensíveis restringe escalonamento ingênuo; sinal condicional (sem métricas).",
+                });
             }
 
             if (system.Criticality == "CRITICAL")
             {
-                score += RiskRules.ScalabilityCriticalNoMetricsWeight;
+                b.Add(new RuleContribution
+                {
+                    Rule = "criticality=CRITICAL (no metrics)",
+                    Points = RiskRules.ScalabilityCriticalNoMetricsWeight,
+                    Rationale = "Sistema crítico sem métrica de carga observada — risco desconhecido, tratado como condicional.",
+                });
             }
         }
 
-        return Math.Min(score, RiskRules.MaxRiskScore);
+        return (Total(b), b);
     }
 
     private static string SeverityFor(int score) => score switch

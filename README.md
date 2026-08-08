@@ -69,6 +69,33 @@ All weights live as named constants in
 [`RiskRules.cs`](src/CloudSealed.ML.Engine/Scoring/RiskRules.cs), each with a
 one-line rationale.
 
+## Every score is auditable
+
+The response does not just give a number — it gives the rules that produced it.
+Each `riskScore` ships with a `scoreBreakdown` of
+`{ rule, points, rationale }` entries, and
+
+```
+riskScore == min( sum(breakdown.points), 100 )
+```
+
+holds exactly (a test enforces it, so the explanation can never drift from the
+score). For example:
+
+```jsonc
+"singlePointOfFailure": 60,
+"scoreBreakdown": {
+  "singlePointOfFailure": [
+    { "rule": "criticality=CRITICAL", "points": 55, "rationale": "..." },
+    { "rule": "type=API",             "points": 5,  "rationale": "..." }
+  ]
+}
+```
+
+Every response also carries `engineVersion` and `method` as provenance. This
+traceability is the point of choosing deterministic rules over a black box —
+see [METHODOLOGY.md](METHODOLOGY.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Use
 
 ### HTTP service
