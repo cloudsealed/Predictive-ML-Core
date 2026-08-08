@@ -4,6 +4,24 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <!-- NuGet package metadata. The Engine is the reusable library: the
+         architecture-risk contract plus the explainable deterministic scorer.
+         The API and CLI projects consume it and are not packaged. -->
+    <IsPackable>true</IsPackable>
+    <PackageId>CloudSealed.ML.Core</PackageId>
+    <Version>0.2.0</Version>
+    <Authors>Rodrigo Martinez Pinto</Authors>
+    <Description>Explainable, deterministic architecture-risk scoring from a declared system inventory. Every risk score ships with a traceable breakdown (rule, points, rationale). No trained model, no telemetry required.</Description>
+    <PackageTags>architecture;risk;finops;cloud;scoring;explainable;audit</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/cloudsealed/Predictive-ML-Core</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/cloudsealed/Predictive-ML-Core</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
 </Project>
