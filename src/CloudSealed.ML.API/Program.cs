@@ -1,5 +1,6 @@
 using CloudSealed.ML.Engine.Models;
 using CloudSealed.ML.Engine.Scoring;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,8 +14,30 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 builder.Services.AddSingleton<ArchitectureAnalyzer>();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "CloudSealed Predictive-ML-Core", Version = "v1" });
+    options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+    {
+        Name = "X-Api-Key",
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Description = "Só é exigida quando PREDICTIVE_ML_CORE_API_KEY está configurada no servidor.",
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "ApiKey" } },
+            Array.Empty<string>()
+        },
+    });
+});
 
 var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
