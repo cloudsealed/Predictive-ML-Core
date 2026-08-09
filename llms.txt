@@ -1,0 +1,32 @@
+# Predictive-ML-Core
+
+> Scores architecture risk from a declared system inventory (name, type,
+> criticality, public exposure, auth method) using explicit, weighted rules —
+> not a trained model. Every score ships with a rule-by-rule breakdown
+> (`scoreBreakdown`) tying each point back to a specific field in the request
+> and a stated rationale, so the reasoning is auditable rather than a black
+> box. Deliberately not ML: the request contract carries no runtime
+> telemetry and there is no labeled training set of past incidents to fit a
+> model against — see the README's "Why this is not a trained model" section.
+
+It is a C#/.NET 10 HTTP service, a CLI, a NuGet package
+(`CloudSealed.ML.Core`), and a GitHub Action.
+
+## Docs
+
+- [README](https://github.com/cloudsealed/Predictive-ML-Core/blob/main/README.md): install, HTTP/CLI/GitHub Action usage, alerts, HTML reports, score breakdown example
+- [METHODOLOGY.md](https://github.com/cloudsealed/Predictive-ML-Core/blob/main/METHODOLOGY.md): full scoring method
+- [ARCHITECTURE.md](https://github.com/cloudsealed/Predictive-ML-Core/blob/main/ARCHITECTURE.md): codebase design ("No I/O, no web" in the core engine)
+- [src/CloudSealed.ML.Engine/Scoring/RiskRules.cs](https://github.com/cloudsealed/Predictive-ML-Core/blob/main/src/CloudSealed.ML.Engine/Scoring/RiskRules.cs): every weight, as a named constant with a one-line rationale
+
+## MCP
+
+An MCP server exposing this engine as a `cloudsealed_score_architecture_risk`
+tool for AI agents is available at
+[cloudsealed/cloudsealed-mcp](https://github.com/cloudsealed/cloudsealed-mcp).
+
+## Optional
+
+- [NuGet package](https://www.nuget.org/packages/CloudSealed.ML.Core): `dotnet add package CloudSealed.ML.Core`
+- [Docker image](https://hub.docker.com/r/cloudsealed/predictive-ml-core): `docker pull cloudsealed/predictive-ml-core`
+- [GitHub Action listing](https://github.com/marketplace/actions/predictive-ml-core-architecture-risk-audit)
