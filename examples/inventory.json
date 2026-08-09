@@ -1,0 +1,35 @@
+{
+  "companyName": "Acme",
+  "systems": [
+    {
+      "name": "checkout-api",
+      "type": "API",
+      "criticality": "CRITICAL",
+      "publicFacing": true,
+      "authMethod": null,
+      "dataSensitivity": "HIGH"
+    },
+    {
+      "name": "orders-db",
+      "type": "DATABASE",
+      "criticality": "CRITICAL",
+      "publicFacing": false,
+      "authMethod": "MTLS",
+      "dataSensitivity": "HIGH"
+    },
+    {
+      "name": "payment-gateway",
+      "type": "THIRD_PARTY_SERVICE",
+      "criticality": "HIGH",
+      "publicFacing": true,
+      "authMethod": "OAUTH2"
+    },
+    {
+      "name": "internal-dashboard",
+      "type": "APPLICATION",
+      "criticality": "LOW",
+      "publicFacing": false,
+      "authMethod": "SSO"
+    }
+  ]
+}

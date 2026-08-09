@@ -8,6 +8,10 @@ scores each system on three risk dimensions, explains every finding, and rolls
 the results into an overall architecture score. It is an HTTP service and a
 CLI.
 
+[![CI](https://github.com/cloudsealed/Predictive-ML-Core/actions/workflows/ci.yml/badge.svg)](https://github.com/cloudsealed/Predictive-ML-Core/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/v/CloudSealed.ML.Core.svg)](https://www.nuget.org/packages/CloudSealed.ML.Core)
+[![NuGet downloads](https://img.shields.io/nuget/dt/CloudSealed.ML.Core.svg)](https://www.nuget.org/packages/CloudSealed.ML.Core)
+[![Docker pulls](https://img.shields.io/docker/pulls/cloudsealed/predictive-ml-core.svg)](https://hub.docker.com/r/cloudsealed/predictive-ml-core)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue.svg)](https://dotnet.microsoft.com/)
 
@@ -96,6 +100,20 @@ Every response also carries `engineVersion` and `method` as provenance. This
 traceability is the point of choosing deterministic rules over a black box —
 see [METHODOLOGY.md](METHODOLOGY.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
 
+## Install
+
+```bash
+dotnet add package CloudSealed.ML.Core
+```
+
+```csharp
+using CloudSealed.ML.Engine.Scoring;
+using CloudSealed.ML.Engine.Models;
+
+var response = new ArchitectureAnalyzer().Analyze(request); // PredictArchitectureRequest
+Console.WriteLine(response.OverallArchitectureScore);
+```
+
 ## Use
 
 ### HTTP service
@@ -149,12 +167,13 @@ Response shape:
 ### CLI
 
 ```bash
-dotnet run --project src/CloudSealed.ML.CLI -- inventory.json
-dotnet run --project src/CloudSealed.ML.CLI -- inventory.json --json
+dotnet run --project src/CloudSealed.ML.CLI -- examples/inventory.json
+dotnet run --project src/CloudSealed.ML.CLI -- examples/inventory.json --json
 ```
 
 Runs the same analysis without starting a server, printing either a
-human-readable summary or the raw JSON response.
+human-readable summary or the raw JSON response. [`examples/inventory.json`](examples/inventory.json)
+is a ready-to-run sample with a mix of criticality levels and system types.
 
 ## Development
 
@@ -171,3 +190,7 @@ score, and the HTTP endpoint (auth, validation, response shape).
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+---
+
+If the score breakdown helped you argue a redundancy or auth fix, a star helps other teams find it. Bug reports and PRs are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
