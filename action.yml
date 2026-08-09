@@ -1,0 +1,83 @@
+name: 'predictive-ml-core architecture risk audit'
+description: 'Score architecture risk from a declared system inventory and post findings as a PR comment.'
+author: 'CloudSealed'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  inventory-json:
+    description: 'Path to the inventory JSON (companyName + systems[], see examples/inventory.json).'
+    required: true
+  comment-on-pr:
+    description: 'Post/update a summary comment on the triggering pull request.'
+    required: false
+    default: 'true'
+  github-token:
+    description: 'Token used to post the PR comment. Defaults to the workflow token.'
+    required: false
+    default: ${{ github.token }}
+  fail-on-severity:
+    description: >
+      Fail the step if any finding at or above this severity is present:
+      CRITICAL | HIGH | MEDIUM | LOW. Empty (default) never fails the build —
+      the action only reports.
+    required: false
+    default: ''
+
+outputs:
+  overall-score:
+    description: 'Overall architecture score (0-100).'
+    value: ${{ steps.analyze.outputs.overall-score }}
+  finding-count:
+    description: 'Number of findings across all systems.'
+    value: ${{ steps.analyze.outputs.finding-count }}
+  report-json:
+    description: 'Path to the full PredictArchitectureResponse JSON.'
+    value: ${{ steps.analyze.outputs.report-json }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run predictive-ml-core
+      id: analyze
+      shell: bash
+      run: |
+        set -euo pipefail
+        REPORT="${RUNNER_TEMP}/predictive-ml-core-report.json"
+        CONTAINER=$(docker run -d -p 8092:8092 cloudsealed/predictive-ml-core)
+        trap 'docker rm -f "$CONTAINER" >/dev/null 2>&1 || true' EXIT
+
+        for i in $(seq 1 30); do
+          if curl -sf http://localhost:8092/health > /dev/null; then
+            break
+          fi
+          sleep 1
+        done
+
+        curl -sf -X POST http://localhost:8092/v1/predict-architecture \
+          -H 'Content-Type: application/json' \
+          -d @"${{ inputs.inventory-json }}" > "$REPORT"
+
+        SCORE=$(python3 -c "import json; print(json.load(open('$REPORT'))['overallArchitectureScore'])")
+        COUNT=$(python3 -c "import json; print(sum(len(p['findings']) for p in json.load(open('$REPORT'))['predictions']))")
+
+        echo "report-json=$REPORT" >> "$GITHUB_OUTPUT"
+        echo "overall-score=$SCORE" >> "$GITHUB_OUTPUT"
+        echo "finding-count=$COUNT" >> "$GITHUB_OUTPUT"
+
+    - name: Comment on pull request
+      if: inputs.comment-on-pr == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        REPORT_JSON: ${{ steps.analyze.outputs.report-json }}
+      run: python3 "${{ github.action_path }}/scripts/post_pr_comment.py"
+
+    - name: Enforce severity gate
+      if: inputs.fail-on-severity != ''
+      shell: bash
+      env:
+        REPORT_JSON: ${{ steps.analyze.outputs.report-json }}
+        MIN_SEVERITY: ${{ inputs.fail-on-severity }}
+      run: python3 "${{ github.action_path }}/scripts/severity_gate.py"
