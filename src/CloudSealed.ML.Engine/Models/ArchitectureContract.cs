@@ -36,6 +36,11 @@ public class PredictArchitectureRequest
     public List<SystemInput> Systems { get; set; } = new();
 
     public HistoricalMetrics? HistoricalMetrics { get; set; }
+
+    // Opcional/aditivo: se definido, o resultado é enviado para esta URL
+    // (Slack incoming webhook ou listener genérico) quando algum finding
+    // atinge HIGH/CRITICAL. Ver WebhookNotifier.
+    public string? WebhookUrl { get; set; }
 }
 
 public class RiskScores

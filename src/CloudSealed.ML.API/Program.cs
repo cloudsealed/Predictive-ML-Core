@@ -1,4 +1,5 @@
 using CloudSealed.ML.Engine.Models;
+using CloudSealed.ML.Engine.Notifications;
 using CloudSealed.ML.Engine.Scoring;
 using Microsoft.OpenApi.Models;
 
@@ -14,6 +15,7 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 builder.Services.AddSingleton<ArchitectureAnalyzer>();
+builder.Services.AddHttpClient("webhook");
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -41,10 +43,11 @@ app.UseSwaggerUI();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
-app.MapPost("/v1/predict-architecture", (
+app.MapPost("/v1/predict-architecture", async (
     PredictArchitectureRequest? request,
     HttpRequest httpRequest,
-    ArchitectureAnalyzer analyzer) =>
+    ArchitectureAnalyzer analyzer,
+    IHttpClientFactory httpClientFactory) =>
 {
     var apiKey = Environment.GetEnvironmentVariable("PREDICTIVE_ML_CORE_API_KEY");
     if (!string.IsNullOrEmpty(apiKey))
@@ -62,6 +65,13 @@ app.MapPost("/v1/predict-architecture", (
     }
 
     var response = analyzer.Analyze(request);
+
+    if (!string.IsNullOrWhiteSpace(request.WebhookUrl))
+    {
+        await WebhookNotifier.NotifyAsync(
+            httpClientFactory.CreateClient("webhook"), request.WebhookUrl, response, request.CompanyName);
+    }
+
     return Results.Ok(response);
 });
 

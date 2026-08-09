@@ -169,11 +169,51 @@ Response shape:
 ```bash
 dotnet run --project src/CloudSealed.ML.CLI -- examples/inventory.json
 dotnet run --project src/CloudSealed.ML.CLI -- examples/inventory.json --json
+dotnet run --project src/CloudSealed.ML.CLI -- examples/inventory.json --html report.html
 ```
+
+`--html` writes a self-contained report (inline CSS, no CDN) alongside
+whatever other output is requested — open it straight from disk, or attach it
+to an email.
 
 Runs the same analysis without starting a server, printing either a
 human-readable summary or the raw JSON response. [`examples/inventory.json`](examples/inventory.json)
 is a ready-to-run sample with a mix of criticality levels and system types.
+
+## GitHub Action
+
+Run the audit in CI and get the findings as a pull request comment, without
+installing anything locally:
+
+```yaml
+- uses: cloudsealed/Predictive-ML-Core@main
+  with:
+    inventory-json: inventory.json
+    fail-on-severity: CRITICAL   # optional: fail the check on CRITICAL findings
+```
+
+Re-runs on the same PR edit the existing comment instead of piling up new
+ones. See [action.yml](action.yml) for all inputs/outputs and
+[.github/workflows/example-usage.yml](.github/workflows/example-usage.yml)
+for a working example (this repository dogfoods its own action against
+[examples/inventory.json](examples/inventory.json) on every push).
+
+## Alerts
+
+Send the result to Slack (or any generic webhook listener) when a finding
+reaches a severity threshold, without standing up a dashboard:
+
+```bash
+dotnet run --project src/CloudSealed.ML.CLI -- examples/inventory.json --webhook-url "$SLACK_WEBHOOK_URL"
+```
+
+A Slack incoming-webhook URL (`hooks.slack.com`) is auto-detected and
+rendered as a formatted message; any other URL receives the full JSON
+response, so it works as-is with Teams, PagerDuty, or a custom listener.
+Nothing is sent unless a finding is HIGH or CRITICAL. The same behaviour is
+available in the HTTP API via the optional `webhookUrl` field on
+`/v1/predict-architecture`. A failed webhook is logged and never fails the
+request.
 
 ## Development
 

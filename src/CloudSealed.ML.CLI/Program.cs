@@ -1,5 +1,7 @@
 using System.Text.Json;
 using CloudSealed.ML.Engine.Models;
+using CloudSealed.ML.Engine.Notifications;
+using CloudSealed.ML.Engine.Reporting;
 using CloudSealed.ML.Engine.Scoring;
 
 namespace CloudSealed.ML.CLI;
@@ -15,12 +17,16 @@ internal static class Program
         WriteIndented = true,
     };
 
-    private static int Main(string[] args)
+    private static async Task<int> Main(string[] args)
     {
-        var positional = args.Where(a => a != "--json").ToArray();
+        var webhookUrl = ExtractOptionValue(args, "--webhook-url");
+        var htmlPath = ExtractOptionValue(args, "--html");
+        var consumed = new[] { "--json", webhookUrl, "--webhook-url", htmlPath, "--html" };
+        var positional = args.Where(a => !consumed.Contains(a)).ToArray();
         if (positional.Length != 1)
         {
-            Console.Error.WriteLine("Uso: cloudsealed-predictive-ml <inventory.json> [--json]");
+            Console.Error.WriteLine(
+                "Uso: cloudsealed-predictive-ml <inventory.json> [--json] [--html PATH] [--webhook-url URL]");
             return 1;
         }
 
@@ -51,6 +57,17 @@ internal static class Program
 
         var response = new ArchitectureAnalyzer().Analyze(request);
 
+        if (webhookUrl is not null)
+        {
+            using var client = new HttpClient();
+            await WebhookNotifier.NotifyAsync(client, webhookUrl, response, request.CompanyName);
+        }
+
+        if (htmlPath is not null)
+        {
+            await File.WriteAllTextAsync(htmlPath, HtmlReportRenderer.Render(response, request.CompanyName));
+        }
+
         if (args.Contains("--json"))
         {
             Console.WriteLine(JsonSerializer.Serialize(response, JsonOptions));
@@ -59,6 +76,12 @@ internal static class Program
 
         PrintHumanReadable(request, response);
         return 0;
+    }
+
+    private static string? ExtractOptionValue(string[] args, string optionName)
+    {
+        var index = Array.IndexOf(args, optionName);
+        return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
     }
 
     private static void PrintHumanReadable(PredictArchitectureRequest request, PredictArchitectureResponse response)
