@@ -10,7 +10,7 @@
          The API and CLI projects consume it and are not packaged. -->
     <IsPackable>true</IsPackable>
     <PackageId>CloudSealed.ML.Core</PackageId>
-    <Version>0.2.0</Version>
+    <Version>0.2.1</Version>
     <Authors>Rodrigo Martinez Pinto</Authors>
     <Description>Explainable, deterministic architecture-risk scoring from a declared system inventory. Every risk score ships with a traceable breakdown (rule, points, rationale). No trained model, no telemetry required.</Description>
     <PackageTags>architecture;risk;finops;cloud;scoring;explainable;audit</PackageTags>
