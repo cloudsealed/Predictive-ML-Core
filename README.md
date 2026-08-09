@@ -215,6 +215,44 @@ available in the HTTP API via the optional `webhookUrl` field on
 `/v1/predict-architecture`. A failed webhook is logged and never fails the
 request.
 
+## How this compares to other architecture risk / catalog tools
+
+Predictive-ML-Core is a scoring engine, not a service catalog or a
+portfolio-wide code scanner — it deliberately has no database and no
+infrastructure discovery (see [ARCHITECTURE.md](ARCHITECTURE.md): "No I/O,
+no web"). It's the right size when you already have (or can quickly declare)
+an inventory and want a fast, explainable risk score; it's the wrong tool if
+you need a full service catalog with ownership and dependency graphs.
+
+| | Predictive-ML-Core | Backstage | CAST Highlight | AWS Well-Architected Tool |
+|---|---|---|---|---|
+| Input | Declared JSON inventory | Service catalog + discovery plugins | Binary/source-code scan | Manual web form |
+| Scoring | Deterministic rules, rule-by-rule breakdown | N/A (catalog, not scorer) | Proprietary | Structured questionnaire |
+| History/trends | None (stateless by design) | Yes (persisted) | Yes | Yes (assessment versions) |
+| Deployment | Library, CLI, self-hosted API, GitHub Action, MCP tool | Self-hosted platform | SaaS | AWS-managed |
+| Cost | Free, open source (MIT) | Free, open source | Paid | Free (AWS-native) |
+
+## FAQ
+
+**How do I score single-point-of-failure risk for a list of services?**
+Declare each system (name, type, criticality, public exposure, auth method)
+in a JSON inventory and POST it to `/v1/predict-architecture`, or run the
+CLI against the file — see [Install](#install) and [Use](#use).
+
+**Why rules instead of a trained model?**
+Because there's no labeled dataset of "this architecture had an incident" to
+train on, and a model without that data would just wrap heuristics in ML
+vocabulary — see ["Why this is not a trained model"](#why-this-is-not-a-trained-model).
+
+**Can an AI agent call this directly instead of me hitting the API by hand?**
+Yes — see [cloudsealed-mcp](https://github.com/cloudsealed/cloudsealed-mcp),
+an MCP server that exposes this as a tool for Claude Code, Claude Desktop,
+Cursor, and other MCP clients.
+
+**Is this a replacement for Backstage or a CMDB?**
+No — it's complementary. Point it at systems you've already cataloged
+elsewhere; it doesn't try to be the catalog itself.
+
 ## Development
 
 ```bash
