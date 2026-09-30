@@ -253,6 +253,15 @@ Cursor, and other MCP clients.
 No — it's complementary. Point it at systems you've already cataloged
 elsewhere; it doesn't try to be the catalog itself.
 
+## 🛠️ Extending CloudSealed (Build Your Own Rules)
+
+**This engine is built to be hackable.** Don't like our risk weights? Want to add a new latency prediction algorithm? **Fork this repository!**
+
+1. **Custom Risk Rules**: Open `src/CloudSealed.ML.Engine/Scoring/RiskRules.cs` and add your own FinOps or Security heuristics.
+2. **New Integrations**: Want to add a Microsoft Teams Webhook? Fork the CLI project and intercept the webhook dispatcher!
+
+**We love Community Forks and Pull Requests!** Check our open `good first issue` tickets to start contributing immediately.
+
 ## Development
 
 ```bash
