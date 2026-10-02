@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
@@ -10,7 +10,7 @@
          The API and CLI projects consume it and are not packaged. -->
     <IsPackable>true</IsPackable>
     <PackageId>CloudSealed.ML.Core</PackageId>
-    <Version>0.3.2</Version>
+    <Version>0.3.3</Version>
     <Authors>Rodrigo Martinez Pinto</Authors>
     <Description>High-performance, SIMD-accelerated architecture risk scoring and dependency blast-radius analysis for .NET 10 / C#. Automatically ingests Terraform, Kubernetes, Docker Compose, and Mermaid diagrams to score SPOF, coupling, and latency risk with 100% deterministic, auditable rules and GenAI code remediation.</Description>
     <PackageTags>ai;llm;genai;agentic;architecture;risk;blast-radius;simd;terraform;kubernetes;docker-compose;mermaid;finops;cloud;scoring;explainable;audit;ml.net;mcp</PackageTags>
