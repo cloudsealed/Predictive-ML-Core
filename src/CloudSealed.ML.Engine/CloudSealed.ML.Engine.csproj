@@ -10,10 +10,10 @@
          The API and CLI projects consume it and are not packaged. -->
     <IsPackable>true</IsPackable>
     <PackageId>CloudSealed.ML.Core</PackageId>
-    <Version>0.3.0</Version>
+    <Version>0.3.1</Version>
     <Authors>Rodrigo Martinez Pinto</Authors>
     <Description>Deterministic, explainable architecture-risk scoring from a declared system inventory, plus an optional ML.NET (FastTree) telemetry-latency predictor for callers who supply their own labeled OS-level telemetry.</Description>
-    <PackageTags>architecture;risk;finops;cloud;scoring;explainable;audit;ml.net;fasttree</PackageTags>
+    <PackageTags>ai;llm;genai;agentic;architecture;risk;finops;cloud;scoring;explainable;audit;ml.net;fasttree</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/cloudsealed/Predictive-ML-Core</PackageProjectUrl>
     <RepositoryUrl>https://github.com/cloudsealed/Predictive-ML-Core</RepositoryUrl>
