@@ -1,5 +1,5 @@
-name: 'predictive-ml-core architecture risk audit'
-description: 'Score architecture risk from a declared system inventory and post findings as a PR comment.'
+name: 'Predictive-ML-Core Architecture Risk & Blast-Radius Audit'
+description: 'Automated architecture risk scoring, DAG blast-radius calculation, and IaC audit for pull requests.'
 author: 'CloudSealed'
 branding:
   icon: 'shield'
