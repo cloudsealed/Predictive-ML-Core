@@ -6,6 +6,13 @@
 # dotenv files
 .env
 
+# Arquivos Pessoais e Artigos
+paper/
+*.pdf
+*.rtf
+*.docx
+*.tex
+
 # User-specific files
 *.rsuser
 *.suo
