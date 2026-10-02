@@ -1,10 +1,18 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using CloudSealed.ML.Engine.Models;
 using CloudSealed.ML.Engine.Notifications;
 using CloudSealed.ML.Engine.Reporting;
 using CloudSealed.ML.Engine.Scoring;
 
 namespace CloudSealed.ML.CLI;
+
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, WriteIndented = true, PropertyNameCaseInsensitive = true)]
+[JsonSerializable(typeof(PredictArchitectureRequest))]
+[JsonSerializable(typeof(PredictArchitectureResponse))]
+internal partial class CliJsonContext : JsonSerializerContext
+{
+}
 
 // Roda a mesma análise do endpoint HTTP a partir de um arquivo JSON local, sem
 // subir servidor. Equivalente ao `cloudsealed-jit export.csv [--json]` do JIT.
@@ -41,7 +49,7 @@ internal static class Program
         try
         {
             var raw = File.ReadAllText(inputPath);
-            request = JsonSerializer.Deserialize<PredictArchitectureRequest>(raw, JsonOptions);
+            request = JsonSerializer.Deserialize(raw, CliJsonContext.Default.PredictArchitectureRequest);
         }
         catch (JsonException ex)
         {
@@ -70,7 +78,7 @@ internal static class Program
 
         if (args.Contains("--json"))
         {
-            Console.WriteLine(JsonSerializer.Serialize(response, JsonOptions));
+            Console.WriteLine(JsonSerializer.Serialize(response, CliJsonContext.Default.PredictArchitectureResponse));
             return 0;
         }
 

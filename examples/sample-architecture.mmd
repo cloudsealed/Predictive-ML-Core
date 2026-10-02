@@ -1,0 +1,7 @@
+graph TD
+    User["Public Client / Web App"] --> API["checkout-api (API Gateway)"]
+    API --> Payment["payment-processor (Third Party)"]
+    API --> Auth["auth-service (Internal API)"]
+    API --> DB[("primary-postgres-db (Database)")]
+    Auth --> DB
+    Payment --> ExternalProvider["Stripe / PayPal API"]
