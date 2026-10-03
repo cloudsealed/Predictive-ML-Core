@@ -1,7 +1,7 @@
 namespace CloudSealed.ML.Engine.Models;
 
-// Espelha 1:1 framework4d-predictive-ml-client.ts (cloudsealed-os).
-// Nomes e tipos de campo não mudam sem versionar o endpoint.
+// Mirrors 1:1 framework4d-predictive-ml-client.ts (cloudsealed-os).
+// Field names and types do not change without versioning the endpoint.
 
 public class SystemInput
 {
@@ -37,9 +37,9 @@ public class PredictArchitectureRequest
 
     public HistoricalMetrics? HistoricalMetrics { get; set; }
 
-    // Opcional/aditivo: se definido, o resultado é enviado para esta URL
-    // (Slack incoming webhook ou listener genérico) quando algum finding
-    // atinge HIGH/CRITICAL. Ver WebhookNotifier.
+    // Optional/additive: if set, the result is sent to this URL
+    // (Slack incoming webhook or generic listener) when any finding
+    // reaches HIGH/CRITICAL. See WebhookNotifier.
     public string? WebhookUrl { get; set; }
 }
 
@@ -52,21 +52,21 @@ public class RiskScores
     public int ScalabilityGap { get; set; }
 }
 
-// Uma regra que disparou e sua contribuição em pontos para um score de risco.
-// É o que torna o scoring auditável: cada ponto rastreável até um campo do
-// request e o motivo pelo qual pesa. É o diferencial explícito frente a um
-// modelo caixa-preta.
+// A rule that fired and its point contribution to a risk score.
+// This is what makes scoring auditable: every point traceable to a field in the
+// request and the reason it carries weight. It is the explicit differentiator
+// against a black-box model.
 public class RuleContribution
 {
-    public string Rule { get; set; } = string.Empty; // chave estável, ex.: "criticality=CRITICAL"
+    public string Rule { get; set; } = string.Empty; // stable key, e.g. "criticality=CRITICAL"
 
-    public int Points { get; set; } // pontos somados ao score da dimensão
+    public int Points { get; set; } // points added to the dimension score
 
-    public string Rationale { get; set; } = string.Empty; // por que essa regra pesa
+    public string Rationale { get; set; } = string.Empty; // why this rule carries weight
 }
 
-// Decomposição, por dimensão de risco, das regras que produziram cada score.
-// O score final é min(soma dos pontos, 100) — a soma pode exceder o teto.
+// Breakdown, by risk dimension, of the rules that produced each score.
+// The final score is min(sum of points, 100) — the sum may exceed the cap.
 public class ScoreBreakdown
 {
     public List<RuleContribution> SinglePointOfFailure { get; set; } = new();
@@ -104,8 +104,8 @@ public class ArchitecturePrediction
 
     public RiskScores RiskScores { get; set; } = new();
 
-    // Opcional/aditivo ao contrato: decomposição rastreável de cada riskScore.
-    // Clients antigos ignoram; clients novos podem auditar o cálculo.
+    // Optional/additive to the contract: traceable breakdown of each riskScore.
+    // Old clients ignore it; new clients can audit the calculation.
     public ScoreBreakdown ScoreBreakdown { get; set; } = new();
 
     public List<Finding> Findings { get; set; } = new();
@@ -121,14 +121,14 @@ public class PredictArchitectureResponse
 
     public int OverallArchitectureScore { get; set; }
 
-    // Proveniência: qual motor/método gerou este resultado. Persistido pelo
-    // consumidor junto dos findings para rastrear a origem em auditorias.
+    // Provenance: which engine/method generated this result. Persisted by the
+    // consumer alongside the findings to track the origin in audits.
     public string EngineVersion { get; set; } = EngineInfo.Version;
 
     public string Method { get; set; } = EngineInfo.Method;
 }
 
-// Identidade do motor, embutida em toda resposta como proveniência.
+// Engine identity, embedded in every response as provenance.
 public static class EngineInfo
 {
     public const string Version = "0.2.0";

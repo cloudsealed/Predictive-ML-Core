@@ -1,56 +1,56 @@
 namespace CloudSealed.ML.Engine.Scoring;
 
-// Pesos e limiares do scoring determinístico. Nenhum modelo treinado: o request
-// só traz inventário declarado (nome/tipo/criticidade/exposição), não telemetria
-// real nem grafo de dependências, então cada peso aqui é uma regra de arquitetura
-// explícita, não um coeficiente aprendido. Ver README para o porquê.
+// Weights and thresholds for deterministic scoring. No trained model: the request
+// only carries declared inventory (name/type/criticality/exposure), not real
+// telemetry or a dependency graph, so each weight here is an explicit architecture
+// rule, not a learned coefficient. See README for the rationale.
 public static class RiskRules
 {
     // ---- Single Point of Failure ----
-    // Base pelo impacto declarado da criticidade. O schema não expõe campo de
-    // redundância, então assume-se instância única (pior caso) — essa premissa
-    // é declarada no texto do finding, não escondida no número.
+    // Base score by declared criticality impact. The schema does not expose a
+    // redundancy field, so a single instance is assumed (worst case) — this
+    // assumption is stated in the finding text, not hidden in the number.
     public const int SpofBaseLow = 0;
     public const int SpofBaseMedium = 15;
     public const int SpofBaseHigh = 35;
     public const int SpofBaseCritical = 55;
 
-    public const int SpofModifierDatabase = 15;    // estado é mais caro de replicar que stateless
-    public const int SpofModifierThirdParty = 20;   // fora do controle, sem fallback declarado
+    public const int SpofModifierDatabase = 15;    // state is more expensive to replicate than stateless
+    public const int SpofModifierThirdParty = 20;   // outside of control, no declared fallback
     public const int SpofModifierAppOrApi = 5;
 
-    public const int SpofFindingThreshold = 50;      // acima disso, gera finding
+    public const int SpofFindingThreshold = 50;      // above this, generates a finding
 
     // ---- Excessive Coupling ----
-    // Sem grafo de dependências no request, o proxy de acoplamento é exposição +
-    // presença de autenticação + dependência de terceiros (por sistema e agregado).
+    // Without a dependency graph in the request, the coupling proxy is exposure +
+    // presence of authentication + third-party dependency (per system and aggregate).
     public const int CouplingPublicNoAuth = 40;
     public const int CouplingPublicWithAuth = 15;
     public const int CouplingInternalBase = 5;
     public const int CouplingThirdPartyType = 25;
 
-    public const int CouplingFanOutFreeCount = 2;    // até 2 THIRD_PARTY_SERVICE no request não penaliza
-    public const int CouplingFanOutStep = 5;         // +5 por dependência além da 2ª
-    public const int CouplingFanOutCap = 20;         // teto do bônus agregado de fan-out
+    public const int CouplingFanOutFreeCount = 2;    // up to 2 THIRD_PARTY_SERVICE in the request incurs no penalty
+    public const int CouplingFanOutStep = 5;         // +5 per dependency beyond the 2nd
+    public const int CouplingFanOutCap = 20;         // cap on the aggregate fan-out bonus
 
     public const int CouplingFindingThreshold = 50;
 
     // ---- Scalability Gap ----
-    // Preferência por métrica real (historicalMetrics) sobre sinal declarativo.
+    // Preference for real metrics (historicalMetrics) over declarative signal.
     public const double P99LatencyThresholdMs = 1000;
     public const int ScalabilityP99Weight = 30;
 
-    public const double TailRatioThreshold = 3.0;    // p99/avg acima disso = cauda pesada sob carga
+    public const double TailRatioThreshold = 3.0;    // p99/avg above this = heavy tail under load
     public const int ScalabilityTailRatioWeight = 20;
 
-    // Fallback condicional quando não há historicalMetrics — rotulado como
-    // "unknown risk"/premissa no finding, não tratado como medição.
+    // Conditional fallback when there are no historicalMetrics — labelled as
+    // "unknown risk"/assumption in the finding, not treated as a measurement.
     public const int ScalabilityDataSensitivityDbWeight = 20;
     public const int ScalabilityCriticalNoMetricsWeight = 15;
 
-    // 30 e não 40: o par DATABASE+dataSensitivity (20) + CRITICAL sem métricas (15)
-    // soma 35 e precisa cruzar o limiar sozinho — nenhum dos dois sinais isolados
-    // deve gerar finding, só a combinação.
+    // 30 and not 40: the DATABASE+dataSensitivity pair (20) + CRITICAL with no metrics (15)
+    // sums to 35 and must cross the threshold on its own — neither signal in isolation
+    // should generate a finding, only the combination.
     public const int ScalabilityFindingThreshold = 30;
 
     public const int MaxRiskScore = 100;
@@ -71,8 +71,8 @@ public static class RiskRules
         _ => 0,
     };
 
-    // Peso de criticidade usado para ponderar o overallArchitectureScore: um
-    // CRITICAL de alto risco não pode se diluir entre vários LOW no cálculo geral.
+    // Criticality weight used to factor the overallArchitectureScore: a
+    // high-risk CRITICAL must not be diluted among several LOWs in the overall calculation.
     public static int OverallWeightByCriticality(string criticality) => criticality switch
     {
         "CRITICAL" => 4,

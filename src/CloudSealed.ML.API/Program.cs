@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8092";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
-const long MaxPayloadBytes = 2_000_000; // ~2MB: inventário de sistemas não precisa de mais que isso
+const long MaxPayloadBytes = 2_000_000; // ~2MB: system inventory does not need more than that
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.Limits.MaxRequestBodySize = MaxPayloadBytes;
@@ -26,7 +26,7 @@ builder.Services.AddSwaggerGen(options =>
         Name = "X-Api-Key",
         Type = SecuritySchemeType.ApiKey,
         In = ParameterLocation.Header,
-        Description = "Só é exigida quando PREDICTIVE_ML_CORE_API_KEY está configurada no servidor.",
+        Description = "Only required when PREDICTIVE_ML_CORE_API_KEY is configured on the server.",
     });
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -59,12 +59,12 @@ app.MapPost("/v1/predict-architecture", async (
 {
     if (!IsAuthorized(httpRequest))
     {
-        return Results.Json(new { error = "X-Api-Key inválida ou ausente" }, statusCode: StatusCodes.Status401Unauthorized);
+        return Results.Json(new { error = "X-Api-Key invalid or missing" }, statusCode: StatusCodes.Status401Unauthorized);
     }
 
     if (request is null || string.IsNullOrWhiteSpace(request.CompanyName) || request.Systems is not { Count: > 0 })
     {
-        return Results.BadRequest(new { error = "companyName e systems[] são obrigatórios" });
+        return Results.BadRequest(new { error = "companyName and systems[] are required" });
     }
 
     var response = analyzer.Analyze(request);
@@ -82,12 +82,12 @@ app.MapPost("/v1/predict-severity", (PredictSeverityRequest? request, HttpReques
 {
     if (!IsAuthorized(httpRequest))
     {
-        return Results.Json(new { error = "X-Api-Key inválida ou ausente" }, statusCode: StatusCodes.Status401Unauthorized);
+        return Results.Json(new { error = "X-Api-Key invalid or missing" }, statusCode: StatusCodes.Status401Unauthorized);
     }
 
     if (request is null || request.Candidate is null || string.IsNullOrWhiteSpace(request.Candidate.Dimension))
     {
-        return Results.BadRequest(new { error = "candidate.dimension é obrigatório" });
+        return Results.BadRequest(new { error = "candidate.dimension is required" });
     }
 
     var engine = new SeverityPredictionEngine();
@@ -99,9 +99,9 @@ app.MapPost("/v1/predict-severity", (PredictSeverityRequest? request, HttpReques
             Trained = false,
             TrainingSampleCount = request.TrainingReviews.Count,
             MinimumTrainingSamples = SeverityPredictionEngine.MinimumTrainingSamples,
-            Message = $"Apenas {request.TrainingReviews.Count} revisão(ões) real(is) disponível(is); " +
-                $"são necessárias pelo menos {SeverityPredictionEngine.MinimumTrainingSamples} para treinar sem overfit. " +
-                "Use a severidade padrão/estática até acumular mais revisões reais.",
+            Message = $"Only {request.TrainingReviews.Count} real review(s) available; " +
+                $"at least {SeverityPredictionEngine.MinimumTrainingSamples} are required to train without overfit. " +
+                "Use the default/static severity until more real reviews have been accumulated.",
         });
     }
 

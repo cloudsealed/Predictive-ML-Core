@@ -18,7 +18,7 @@ public ref struct ZeroAllocRiskProbe
     }
 
     /// <summary>
-    /// Avalia a violação de p99 via SIMD com alocação zero de heap.
+    /// Evaluates p99 violation via SIMD with zero heap allocation.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public readonly int CalculateTailViolationScore()
@@ -41,7 +41,7 @@ public ref struct ZeroAllocRiskProbe
             }
         }
 
-        // Processa resíduos escalares
+        // Process scalar remainders
         for (; i < _recentLatenciesMs.Length; i++)
         {
             if (_recentLatenciesMs[i] >= _p99ThresholdMs)

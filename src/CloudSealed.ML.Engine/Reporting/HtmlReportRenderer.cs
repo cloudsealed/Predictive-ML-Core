@@ -5,9 +5,9 @@ using CloudSealed.ML.Engine.Models;
 
 namespace CloudSealed.ML.Engine.Reporting;
 
-// HTML autocontido (CSS inline, sem CDN) para demo/compartilhamento — não é
-// um dashboard servido. Mesma paleta visual do relatório do JIT-Optimization-Engine
-// para consistência de marca entre os dois motores.
+// Self-contained HTML (inline CSS, no CDN) for demo/sharing — not a
+// served dashboard. Same visual palette as the JIT-Optimization-Engine report
+// for brand consistency between the two engines.
 public static class HtmlReportRenderer
 {
     private static readonly Dictionary<string, string> SeverityColors = new()
