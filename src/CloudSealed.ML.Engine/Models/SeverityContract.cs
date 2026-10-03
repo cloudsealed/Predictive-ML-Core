@@ -1,14 +1,14 @@
 namespace CloudSealed.ML.Engine.Models;
 
-// Espelha 1:1 o cliente TypeScript que consumir /v1/predict-severity.
-// Nomes e tipos de campo não mudam sem versionar o endpoint.
+// Mirrors 1:1 the TypeScript client that consumes /v1/predict-severity.
+// Field names and types do not change without versioning the endpoint.
 //
-// Stateless por design (igual /v1/predict-architecture): cada request carrega
-// os exemplos de treino reais junto com o item a classificar. Sem cache/estado
-// em memória entre requests — o chamador decide quando re-treinar simplesmente
-// enviando o histórico atualizado. Abaixo de MinimumTrainingSamples, o
-// endpoint recusa e devolve trained=false explicitamente, em vez de arriscar
-// overfit silencioso.
+// Stateless by design (same as /v1/predict-architecture): each request carries
+// the actual training examples together with the item to classify. No cache/state
+// in memory between requests — the caller decides when to retrain simply by
+// sending the updated history. Below MinimumTrainingSamples, the endpoint
+// refuses and returns trained=false explicitly, instead of risking silent
+// overfit.
 
 public class FindingReviewInput
 {
@@ -21,19 +21,19 @@ public class FindingReviewInput
 
     public string Description { get; set; } = string.Empty;
 
-    // Obrigatório nos exemplos de treino; ignorado em Candidate.
+    // Required in training examples; ignored in Candidate.
     // 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
     public string? Severity { get; set; }
 }
 
 public class PredictSeverityRequest
 {
-    // Achados já revisados por analista (com Severity preenchido) — o
-    // conjunto de treino real. O chamador é responsável por só incluir
-    // revisões humanas de verdade, nunca dado sintético.
+    // Findings already reviewed by an analyst (with Severity filled in) — the
+    // actual training set. The caller is responsible for only including
+    // genuine human reviews, never synthetic data.
     public List<FindingReviewInput> TrainingReviews { get; set; } = new();
 
-    // O achado ainda não revisado que se quer classificar.
+    // The finding not yet reviewed that is to be classified.
     public FindingReviewInput Candidate { get; set; } = new();
 }
 
@@ -45,12 +45,12 @@ public class PredictSeverityResponse
 
     public int MinimumTrainingSamples { get; set; }
 
-    // Null quando Trained=false.
+    // Null when Trained=false.
     public string? PredictedSeverity { get; set; }
 
-    // Probabilidade por classe; vazio quando Trained=false.
+    // Per-class probability; empty when Trained=false.
     public Dictionary<string, float> ClassProbabilities { get; set; } = new();
 
-    // Preenchido só quando Trained=false, explicando por que (dado insuficiente).
+    // Populated only when Trained=false, explaining why (insufficient data).
     public string? Message { get; set; }
 }

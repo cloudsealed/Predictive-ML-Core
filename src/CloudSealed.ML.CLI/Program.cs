@@ -14,8 +14,8 @@ internal partial class CliJsonContext : JsonSerializerContext
 {
 }
 
-// Roda a mesma análise do endpoint HTTP a partir de um arquivo JSON local, sem
-// subir servidor. Equivalente ao `cloudsealed-jit export.csv [--json]` do JIT.
+// Runs the same analysis as the HTTP endpoint from a local JSON file, without
+// starting a server. Equivalent to `cloudsealed-jit export.csv [--json]` from the JIT.
 internal static class Program
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -34,14 +34,14 @@ internal static class Program
         if (positional.Length != 1)
         {
             Console.Error.WriteLine(
-                "Uso: cloudsealed-predictive-ml <inventory.json> [--json] [--html PATH] [--webhook-url URL]");
+                "Usage: cloudsealed-predictive-ml <inventory.json> [--json] [--html PATH] [--webhook-url URL]");
             return 1;
         }
 
         var inputPath = positional[0];
         if (!File.Exists(inputPath))
         {
-            Console.Error.WriteLine($"Arquivo não encontrado: {inputPath}");
+            Console.Error.WriteLine($"File not found: {inputPath}");
             return 1;
         }
 
@@ -53,13 +53,13 @@ internal static class Program
         }
         catch (JsonException ex)
         {
-            Console.Error.WriteLine($"JSON inválido: {ex.Message}");
+            Console.Error.WriteLine($"Invalid JSON: {ex.Message}");
             return 1;
         }
 
         if (request is null || string.IsNullOrWhiteSpace(request.CompanyName) || request.Systems is not { Count: > 0 })
         {
-            Console.Error.WriteLine("companyName e systems[] são obrigatórios no JSON de entrada.");
+            Console.Error.WriteLine("companyName and systems[] are required in the input JSON.");
             return 1;
         }
 
@@ -108,12 +108,12 @@ internal static class Program
             foreach (var finding in prediction.Findings)
             {
                 Console.WriteLine($"  [{finding.Severity}] {finding.Title} — {finding.Description}");
-                Console.WriteLine($"    Remediação: {finding.Remediation}");
+                Console.WriteLine($"    Remediation: {finding.Remediation}");
             }
 
             foreach (var recommendation in prediction.Recommendations)
             {
-                Console.WriteLine($"  Recomendação ({recommendation.Effort}): {recommendation.Title} — {recommendation.Description}");
+                Console.WriteLine($"  Recommendation ({recommendation.Effort}): {recommendation.Title} — {recommendation.Description}");
             }
 
             Console.WriteLine();

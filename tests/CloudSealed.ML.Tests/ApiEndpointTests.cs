@@ -5,9 +5,9 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace CloudSealed.ML.Tests;
 
-// Testes de env var (X-Api-Key) mutam estado de processo, então esta classe
-// não pode rodar em paralelo com outra que também mexa em PREDICTIVE_ML_CORE_API_KEY.
-// Ver xunit.runner.json/CollectionBehavior no assembly.
+// Env var tests (X-Api-Key) mutate process state, so this class
+// must not run in parallel with any other that also touches PREDICTIVE_ML_CORE_API_KEY.
+// See xunit.runner.json/CollectionBehavior in the assembly.
 public class ApiEndpointTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
     private readonly WebApplicationFactory<Program> _factory;
@@ -99,9 +99,9 @@ public class ApiEndpointTests : IClassFixture<WebApplicationFactory<Program>>, I
     private static FindingReviewInput SampleCandidate() => new()
     {
         Dimension = "SECURITY",
-        Category = "Identidade & Acesso",
-        Title = "MFA ausente em conta administrativa",
-        Description = "Conta com privilégio administrativo sem MFA habilitado.",
+        Category = "Identity & Access",
+        Title = "MFA missing on admin account",
+        Description = "Admin account with elevated privileges has no MFA enabled.",
     };
 
     private static List<FindingReviewInput> SyntheticTrainingReviews(int count)
@@ -113,11 +113,11 @@ public class ApiEndpointTests : IClassFixture<WebApplicationFactory<Program>>, I
             reviews.Add(new FindingReviewInput
             {
                 Dimension = authIssue ? "SECURITY" : "COST",
-                Category = authIssue ? "Identidade & Acesso" : "Otimização",
-                Title = authIssue ? "MFA ausente em conta administrativa" : "Recurso ocioso identificado",
+                Category = authIssue ? "Identity & Access" : "Optimization",
+                Title = authIssue ? "MFA missing on admin account" : "Idle resource detected",
                 Description = authIssue
-                    ? "Conta com privilégio administrativo sem MFA habilitado."
-                    : "Instância sem uso nos últimos 30 dias.",
+                    ? "Admin account with elevated privileges has no MFA enabled."
+                    : "Instance unused for the last 30 days.",
                 Severity = authIssue ? "CRITICAL" : "MEDIUM",
             });
         }
@@ -151,7 +151,7 @@ public class ApiEndpointTests : IClassFixture<WebApplicationFactory<Program>>, I
         Assert.NotNull(body);
         Assert.False(body!.Trained);
         Assert.Null(body.PredictedSeverity);
-        Assert.Contains("Use a severidade padrão", body.Message);
+        Assert.Contains("Use the default/static severity", body.Message);
     }
 
     [Fact]

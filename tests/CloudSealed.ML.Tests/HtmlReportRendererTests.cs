@@ -14,8 +14,8 @@ public class HtmlReportRendererTests
             new ArchitecturePrediction
             {
                 SystemName = "checkout-api",
-                Findings = [new Finding { Title = "Ponto único de falha", Severity = "CRITICAL", Description = "..." }],
-                Recommendations = [new Recommendation { Title = "Adicionar redundância", Effort = "MEDIUM", Description = "..." }],
+                Findings = [new Finding { Title = "Single point of failure", Severity = "CRITICAL", Description = "..." }],
+                Recommendations = [new Recommendation { Title = "Implement redundancy", Effort = "MEDIUM", Description = "..." }],
             },
         ],
     };
@@ -38,7 +38,7 @@ public class HtmlReportRendererTests
         Assert.Contains("58/100", output);
         Assert.Contains("checkout-api", output);
         Assert.Contains("CRITICAL", output);
-        Assert.Contains("Adicionar redundância", output);
+        Assert.Contains("Implement redundancy", output);
     }
 
     [Fact]

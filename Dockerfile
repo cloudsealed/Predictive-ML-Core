@@ -11,7 +11,7 @@ RUN dotnet restore src/CloudSealed.ML.API/CloudSealed.ML.API.csproj
 
 COPY src/ src/
 RUN dotnet publish src/CloudSealed.ML.API/CloudSealed.ML.API.csproj \
-    --no-restore -c Release -o /app/publish
+    --no-restore -c Release -f net10.0 -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 LABEL org.opencontainers.image.source="https://github.com/cloudsealed/Predictive-ML-Core" \

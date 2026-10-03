@@ -19,6 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Build Docker image from source
+        run: docker build -t cloudsealed/predictive-ml-core .
+
       - name: Run predictive-ml-core on the sample inventory
         id: predictive
         uses: ./

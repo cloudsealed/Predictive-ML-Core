@@ -4,9 +4,9 @@ using CloudSealed.ML.Engine.Models;
 
 namespace CloudSealed.ML.Engine.Notifications;
 
-// Efeito colateral, não parte do contrato de análise: uma falha de rede é
-// engolida (nunca propagada), para que um webhook fora do ar não derrube uma
-// resposta que já foi calculada com sucesso. Espelha cloudsealed_jit/notify.py.
+// Side effect, not part of the analysis contract: a network failure is
+// swallowed (never propagated), so that a down webhook does not bring down a
+// response that was already successfully computed. Mirrors cloudsealed_jit/notify.py.
 public static class WebhookNotifier
 {
     private static readonly Dictionary<string, int> SeverityRank = new()
@@ -55,7 +55,7 @@ public static class WebhookNotifier
             .Any(f => SeverityRank.GetValueOrDefault(f.Severity, 0) >= threshold);
     }
 
-    // Retorna se o webhook foi enviado (false = abaixo do limiar ou falha de rede).
+    // Returns whether the webhook was sent (false = below threshold or network failure).
     public static async Task<bool> NotifyAsync(
         HttpClient client,
         string webhookUrl,

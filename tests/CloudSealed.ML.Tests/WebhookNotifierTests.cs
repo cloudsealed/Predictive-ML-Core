@@ -37,8 +37,8 @@ public class WebhookNotifierTests
             new ArchitecturePrediction
             {
                 SystemName = "checkout-api",
-                Findings = [new Finding { Title = "Ponto único de falha", Severity = severity, Description = "..." }],
-                Recommendations = [new Recommendation { Title = "Adicionar redundância", Effort = "MEDIUM" }],
+                Findings = [new Finding { Title = "Single point of failure", Severity = severity, Description = "..." }],
+                Recommendations = [new Recommendation { Title = "Implement redundancy", Effort = "MEDIUM" }],
             },
         ],
     };

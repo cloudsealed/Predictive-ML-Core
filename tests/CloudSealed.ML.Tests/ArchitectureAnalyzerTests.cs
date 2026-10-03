@@ -55,9 +55,9 @@ public class ArchitectureAnalyzerTests
         var prediction = Assert.Single(response.Predictions);
         Assert.True(prediction.RiskScores.SinglePointOfFailure >= RiskRules.SpofFindingThreshold);
         Assert.True(prediction.RiskScores.ExcessiveCoupling >= RiskRules.CouplingFindingThreshold);
-        Assert.Contains(prediction.Findings, f => f.Title.Contains("Ponto único de falha"));
-        Assert.Contains(prediction.Findings, f => f.Title.Contains("Acoplamento excessivo"));
-        Assert.Contains(prediction.Recommendations, r => r.Title == "Implementar redundância");
+        Assert.Contains(prediction.Findings, f => f.Title.Contains("Single point of failure"));
+        Assert.Contains(prediction.Findings, f => f.Title.Contains("Excessive coupling"));
+        Assert.Contains(prediction.Recommendations, r => r.Title == "Implement redundancy");
     }
 
     [Fact]
@@ -130,8 +130,8 @@ public class ArchitectureAnalyzerTests
 
         var prediction = response.Predictions[0];
         Assert.True(prediction.RiskScores.ScalabilityGap >= RiskRules.ScalabilityFindingThreshold);
-        Assert.Contains(prediction.Findings, f => f.Title.Contains("Gargalo de escalabilidade"));
-        Assert.Contains(prediction.Findings, f => f.Description.Contains("historicalMetrics declarado"));
+        Assert.Contains(prediction.Findings, f => f.Title.Contains("Scalability gap"));
+        Assert.Contains(prediction.Findings, f => f.Description.Contains("historicalMetrics declared in the request"));
     }
 
     [Fact]
@@ -164,8 +164,8 @@ public class ArchitectureAnalyzerTests
         var withCriticalScore = _analyzer.Analyze(new PredictArchitectureRequest { CompanyName = "Acme", Systems = withOneCritical })
             .OverallArchitectureScore;
 
-        // Média simples de 9 LOW + 1 CRITICAL diluiria o CRITICAL para ~10% do peso;
-        // a ponderação por criticidade deve puxar o score visivelmente mais para baixo.
+        // A naive average of 9 LOW + 1 CRITICAL would dilute the CRITICAL to ~10% weight;
+        // criticality weighting must pull the score noticeably lower.
         Assert.True(baselineScore - withCriticalScore > 10);
     }
 

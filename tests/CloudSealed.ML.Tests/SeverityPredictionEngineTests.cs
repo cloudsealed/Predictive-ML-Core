@@ -22,11 +22,11 @@ namespace CloudSealed.ML.Tests
                 reviews.Add(new FindingReview
                 {
                     Dimension = authIssue ? "SECURITY" : "COST",
-                    Category = authIssue ? "Identidade & Acesso" : "Otimização",
-                    Title = authIssue ? "MFA ausente em conta administrativa" : "Recurso ocioso identificado",
+                    Category = authIssue ? "Identity & Access" : "Optimization",
+                    Title = authIssue ? "MFA missing on admin account" : "Idle resource detected",
                     Description = authIssue
-                        ? "Conta com privilégio administrativo sem MFA habilitado."
-                        : "Instância sem uso nos últimos 30 dias.",
+                        ? "Admin account with elevated privileges has no MFA enabled."
+                        : "Instance unused for the last 30 days.",
                     Severity = authIssue ? "CRITICAL" : "MEDIUM",
                 });
             }
@@ -67,9 +67,9 @@ namespace CloudSealed.ML.Tests
             var (predicted, probabilities) = engine.Predict(new FindingReview
             {
                 Dimension = "SECURITY",
-                Category = "Identidade & Acesso",
-                Title = "MFA ausente em conta administrativa",
-                Description = "Conta com privilégio administrativo sem MFA habilitado.",
+                Category = "Identity & Access",
+                Title = "MFA missing on admin account",
+                Description = "Admin account with elevated privileges has no MFA enabled.",
             });
 
             Assert.False(string.IsNullOrEmpty(predicted));

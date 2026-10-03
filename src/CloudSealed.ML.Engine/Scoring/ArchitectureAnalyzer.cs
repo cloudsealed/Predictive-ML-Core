@@ -2,10 +2,9 @@ using CloudSealed.ML.Engine.Models;
 
 namespace CloudSealed.ML.Engine.Scoring;
 
-// Orquestra o scoring determinístico: regras de RiskRules -> riskScores por
-// sistema -> findings/recommendations por regra disparada -> score geral
-// ponderado por criticidade. Nenhum passo depende de dado não presente no
-// PredictArchitectureRequest.
+// Orchestrates deterministic scoring: RiskRules -> riskScores per system
+// -> findings/recommendations per triggered rule -> overall score weighted by criticality.
+// No step depends on data not present in PredictArchitectureRequest.
 public class ArchitectureAnalyzer
 {
     public PredictArchitectureResponse Analyze(PredictArchitectureRequest request)
@@ -56,18 +55,18 @@ public class ArchitectureAnalyzer
         {
             findings.Add(new Finding
             {
-                Title = $"Ponto único de falha: {system.Name}",
+                Title = $"Single point of failure: {system.Name}",
                 Severity = SeverityFor(risks.SinglePointOfFailure),
-                Description = $"Sistema '{system.Name}' (criticidade {system.Criticality}, tipo {system.Type}) " +
-                    "não declara redundância. Premissa: o schema de entrada não expõe campo de redundância, " +
-                    "então assume-se instância única (pior caso).",
-                Remediation = "Declarar e/ou implementar failover automático e replicação de dados para " +
-                    "eliminar a dependência de uma única instância.",
+                Description = $"System '{system.Name}' (criticality {system.Criticality}, type {system.Type}) " +
+                    "declares no redundancy. Assumption: the input schema exposes no redundancy field, " +
+                    "so a single instance is assumed (worst case).",
+                Remediation = "Declare and/or implement automatic failover and data replication to " +
+                    "eliminate the single-instance dependency.",
             });
             recommendations.Add(new Recommendation
             {
-                Title = "Implementar redundância",
-                Description = $"Adicionar failover/réplica para {system.Name}.",
+                Title = "Implement redundancy",
+                Description = $"Add failover/replica for {system.Name}.",
                 Effort = risks.SinglePointOfFailure >= 70 ? "HIGH" : "MEDIUM",
             });
         }
@@ -77,21 +76,21 @@ public class ArchitectureAnalyzer
             var exposedWithoutAuth = system.PublicFacing && string.IsNullOrWhiteSpace(system.AuthMethod);
             findings.Add(new Finding
             {
-                Title = $"Acoplamento excessivo: {system.Name}",
+                Title = $"Excessive coupling: {system.Name}",
                 Severity = SeverityFor(risks.ExcessiveCoupling),
                 Description = exposedWithoutAuth
-                    ? $"Sistema '{system.Name}' está exposto publicamente sem authMethod declarado."
-                    : $"Sistema '{system.Name}' tem acoplamento elevado por exposição pública e/ou dependência " +
-                      "de terceiros declarada no inventário.",
+                    ? $"System '{system.Name}' is publicly exposed with no authMethod declared."
+                    : $"System '{system.Name}' has high coupling due to public exposure and/or third-party " +
+                      "dependency declared in the inventory.",
                 Remediation = exposedWithoutAuth
-                    ? "Implementar autenticação (OAuth2, API key ou mTLS) antes de manter exposição pública."
-                    : "Revisar dependências externas declaradas e isolar acoplamento com contratos " +
-                      "versionados e circuit breakers.",
+                    ? "Implement authentication (OAuth2, API key, or mTLS) before maintaining public exposure."
+                    : "Review declared external dependencies and isolate coupling with versioned contracts " +
+                      "and circuit breakers.",
             });
             recommendations.Add(new Recommendation
             {
-                Title = "Reduzir acoplamento",
-                Description = $"Isolar dependências externas e reforçar autenticação em {system.Name}.",
+                Title = "Reduce coupling",
+                Description = $"Isolate external dependencies and strengthen authentication on {system.Name}.",
                 Effort = "MEDIUM",
             });
         }
@@ -100,20 +99,19 @@ public class ArchitectureAnalyzer
         {
             var hasMetrics = historicalMetrics is { P99LatencyMs: not null } or { AvgLatencyMs: not null };
             var basis = hasMetrics
-                ? "com base em historicalMetrics declarado no request"
-                : "sem historicalMetrics — risco condicional, rotulado como unknown risk";
+                ? "based on historicalMetrics declared in the request"
+                : "no historicalMetrics — conditional risk, labeled as unknown risk";
             findings.Add(new Finding
             {
-                Title = $"Gargalo de escalabilidade: {system.Name}",
+                Title = $"Scalability gap: {system.Name}",
                 Severity = SeverityFor(risks.ScalabilityGap),
-                Description = $"Sinal de escalabilidade insuficiente em '{system.Name}' ({basis}).",
-                Remediation = "Executar teste de carga e configurar auto-scaling/particionamento antes de " +
-                    "expandir o tráfego.",
+                Description = $"Insufficient scalability signal for '{system.Name}' ({basis}).",
+                Remediation = "Run a load test and configure auto-scaling/partitioning before expanding traffic.",
             });
             recommendations.Add(new Recommendation
             {
-                Title = "Melhorar escalabilidade",
-                Description = $"Validar capacidade de {system.Name} sob carga e configurar scaling automático.",
+                Title = "Improve scalability",
+                Description = $"Validate {system.Name} capacity under load and configure automatic scaling.",
                 Effort = "MEDIUM",
             });
         }
@@ -128,8 +126,8 @@ public class ArchitectureAnalyzer
         };
     }
 
-    // Cada Score* devolve o score (0-100, com teto) e a lista de regras que o
-    // produziram. score == min(soma dos pontos, MaxRiskScore).
+    // Each Score* returns the score (0-100, capped) and the list of rules that produced it.
+    // score == min(sum of points, MaxRiskScore).
     private static int Total(List<RuleContribution> contributions) =>
         Math.Min(contributions.Sum(c => c.Points), RiskRules.MaxRiskScore);
 
@@ -144,7 +142,7 @@ public class ArchitectureAnalyzer
             {
                 Rule = $"criticality={system.Criticality}",
                 Points = basePts,
-                Rationale = "O impacto de uma falha cresce com a criticidade declarada do sistema.",
+                Rationale = "Failure impact grows with the declared criticality of the system.",
             });
         }
 
@@ -157,9 +155,9 @@ public class ArchitectureAnalyzer
                 Points = typePts,
                 Rationale = system.Type switch
                 {
-                    "DATABASE" => "Estado é mais caro de replicar que um serviço stateless.",
-                    "THIRD_PARTY_SERVICE" => "Dependência de terceiro está fora do seu controle e sem fallback declarado.",
-                    _ => "Serviço de aplicação/API adiciona risco moderado de instância única.",
+                    "DATABASE" => "State is more expensive to replicate than a stateless service.",
+                    "THIRD_PARTY_SERVICE" => "Third-party dependency is outside your control and has no declared fallback.",
+                    _ => "Application/API service adds moderate single-instance risk.",
                 },
             });
         }
@@ -177,7 +175,7 @@ public class ArchitectureAnalyzer
             {
                 Rule = "publicFacing=true,authMethod=null",
                 Points = RiskRules.CouplingPublicNoAuth,
-                Rationale = "Exposição pública sem autenticação declarada é superfície de ataque direta.",
+                Rationale = "Public exposure with no declared authentication is a direct attack surface.",
             });
         }
         else if (system.PublicFacing)
@@ -186,7 +184,7 @@ public class ArchitectureAnalyzer
             {
                 Rule = "publicFacing=true,authMethod=set",
                 Points = RiskRules.CouplingPublicWithAuth,
-                Rationale = "Exposição pública com autenticação ainda amplia a superfície de integração.",
+                Rationale = "Public exposure with authentication still widens the integration surface.",
             });
         }
         else
@@ -195,7 +193,7 @@ public class ArchitectureAnalyzer
             {
                 Rule = "publicFacing=false",
                 Points = RiskRules.CouplingInternalBase,
-                Rationale = "Base mínima de acoplamento para qualquer sistema interno.",
+                Rationale = "Minimum coupling baseline for any internal system.",
             });
         }
 
@@ -205,7 +203,7 @@ public class ArchitectureAnalyzer
             {
                 Rule = "type=THIRD_PARTY_SERVICE",
                 Points = RiskRules.CouplingThirdPartyType,
-                Rationale = "Dependência de terceiro acopla o sistema a um contrato externo.",
+                Rationale = "Third-party dependency couples the system to an external contract.",
             });
         }
 
@@ -217,8 +215,8 @@ public class ArchitectureAnalyzer
             {
                 Rule = $"orgThirdPartyFanOut={thirdPartyCount}",
                 Points = fanOutBonus,
-                Rationale = $"O inventário declara {thirdPartyCount} dependências de terceiro; " +
-                    "acoplamento em nível de organização acima do limiar livre.",
+                Rationale = $"Inventory declares {thirdPartyCount} third-party dependencies; " +
+                    "org-level coupling above the free threshold.",
             });
         }
 
@@ -238,7 +236,7 @@ public class ArchitectureAnalyzer
                 {
                     Rule = $"p99LatencyMs>{RiskRules.P99LatencyThresholdMs}",
                     Points = RiskRules.ScalabilityP99Weight,
-                    Rationale = "Latência de cauda (p99) acima do limiar indica saturação sob carga.",
+                    Rationale = "Tail latency (p99) above threshold indicates saturation under load.",
                 });
             }
 
@@ -249,7 +247,7 @@ public class ArchitectureAnalyzer
                 {
                     Rule = $"p99/avg>{RiskRules.TailRatioThreshold}",
                     Points = RiskRules.ScalabilityTailRatioWeight,
-                    Rationale = "Razão p99/média alta revela cauda pesada — gargalo que aparece nos picos.",
+                    Rationale = "High p99/avg ratio reveals a heavy tail — a bottleneck that appears under peak load.",
                 });
             }
         }
@@ -261,7 +259,7 @@ public class ArchitectureAnalyzer
                 {
                     Rule = "type=DATABASE,dataSensitivity=set (no metrics)",
                     Points = RiskRules.ScalabilityDataSensitivityDbWeight,
-                    Rationale = "Banco com dados sensíveis restringe escalonamento ingênuo; sinal condicional (sem métricas).",
+                    Rationale = "Database with sensitive data restricts naive scaling; conditional signal (no metrics).",
                 });
             }
 
@@ -271,7 +269,7 @@ public class ArchitectureAnalyzer
                 {
                     Rule = "criticality=CRITICAL (no metrics)",
                     Points = RiskRules.ScalabilityCriticalNoMetricsWeight,
-                    Rationale = "Sistema crítico sem métrica de carga observada — risco desconhecido, tratado como condicional.",
+                    Rationale = "Critical system with no observed load metric — unknown risk, treated as conditional.",
                 });
             }
         }
@@ -287,8 +285,8 @@ public class ArchitectureAnalyzer
         _ => "LOW",
     };
 
-    // Média ponderada por criticidade: um CRITICAL de risco alto não pode se
-    // diluir no meio de vários LOW no score geral.
+    // Weighted average by criticality: a high-risk CRITICAL system must not be
+    // diluted by several LOW-risk systems in the overall score.
     private static int ComputeOverallScore(List<SystemInput> systems, List<ArchitecturePrediction> predictions)
     {
         if (predictions.Count == 0)
@@ -319,8 +317,8 @@ public class ArchitectureAnalyzer
     {
         var totalFindings = predictions.Sum(p => p.Findings.Count);
         var totalRecommendations = predictions.Sum(p => p.Recommendations.Count);
-        return $"Análise de {request.Systems.Count} sistema(s) de {request.CompanyName} concluída. " +
-            $"Score geral (ponderado por criticidade): {overallScore}/100. " +
-            $"{totalFindings} finding(s), {totalRecommendations} recomendação(ões).";
+        return $"Analysis of {request.Systems.Count} system(s) for {request.CompanyName} complete. " +
+            $"Overall score (weighted by criticality): {overallScore}/100. " +
+            $"{totalFindings} finding(s), {totalRecommendations} recommendation(s).";
     }
 }

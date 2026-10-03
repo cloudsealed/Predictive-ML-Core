@@ -19,14 +19,14 @@ public sealed class DependencyGraphAnalyzer
     public void AddDependency(int sourceIndex, int targetIndex, float couplingWeight = 1.0f)
     {
         if (sourceIndex >= _nodeCount || targetIndex >= _nodeCount)
-            throw new ArgumentOutOfRangeException("Índice de nó inválido no grafo de dependência.");
+            throw new ArgumentOutOfRangeException("Invalid node index in the dependency graph.");
 
         _edges.Add(new Edge(sourceIndex, targetIndex, couplingWeight));
     }
 
     /// <summary>
-    /// Calcula a Centralidade e o Risco de Queda em Cascata (Blast Radius)
-    /// Sem alocações dinâmicas repetitivas, operando sobre spans pré-alocados.
+    /// Computes Centrality and Cascade Failure Risk (Blast Radius)
+    /// without repetitive dynamic allocations, operating on pre-allocated spans.
     /// </summary>
     public void ComputeBlastRadius(Span<float> outBlastRadiusScores, Span<int> outInDegrees)
     {
@@ -35,7 +35,7 @@ public sealed class DependencyGraphAnalyzer
 
         ReadOnlySpan<Edge> edgeSpan = _edges.ToArray();
 
-        // 1. Acumulação de dependências diretas (in-degree e fan-in)
+        // 1. Accumulation of direct dependencies (in-degree and fan-in)
         for (int i = 0; i < edgeSpan.Length; i++)
         {
             ref readonly var edge = ref edgeSpan[i];
@@ -43,12 +43,12 @@ public sealed class DependencyGraphAnalyzer
             outBlastRadiusScores[edge.TargetIndex] += (15.0f * edge.CouplingWeight);
         }
 
-        // 2. Normalização e teto determinístico
+        // 2. Normalisation and deterministic cap
         for (int i = 0; i < _nodeCount; i++)
         {
             if (outInDegrees[i] >= 3)
             {
-                outBlastRadiusScores[i] += 25.0f; // Penalidade por gargalo de convergência crítica
+                outBlastRadiusScores[i] += 25.0f; // Penalty for critical convergence bottleneck
             }
             outBlastRadiusScores[i] = MathF.Min(outBlastRadiusScores[i], 100.0f);
         }

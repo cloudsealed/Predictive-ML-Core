@@ -277,6 +277,75 @@ We welcome pull requests, new IaC parsers, and custom risk rule additions!
 
 ---
 
+## FAQ
+
+**What is CloudSealed.ML.Core for?**
+Deterministic, auditable architecture risk scoring and SLA breach forecasting from OS telemetry. Zero-allocation inference and SIMD-accelerated feature extraction for .NET services that need ML inline without GC pressure.
+
+**How is it different from ML.NET alone?**
+ML.NET gives you the primitives. `CloudSealed.ML.Core` adds: zero-allocation inference path (`ReadOnlySpan<float>` throughout), deterministic scoring (same inputs → same outputs), and prebuilt pipelines for risk/SLA use cases. Use raw ML.NET for generic models; use this for latency-sensitive services.
+
+**Does it support .NET Framework?**
+No. .NET 6+ only — depends on `Span<T>` and modern SIMD intrinsics.
+
+**What does "zero-allocation inference" mean in practice?**
+The hot path allocates nothing on the managed heap. No boxing, no LINQ, no `new`. Critical when running under GC pressure with strict p99 targets.
+
+**How do I integrate it into an ASP.NET Core service?**
+
+```csharp
+services.AddSingleton<RiskScorer>(sp =>
+    RiskScorer.Load("models/arch-risk-v3.cml"));
+
+app.MapGet("/score", (RiskScorer scorer, SystemInventory inv) =>
+    scorer.Score(inv.AsSpan()));
+```
+
+Scorer is thread-safe — register as singleton.
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is CloudSealed.ML.Core for?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Deterministic, auditable architecture risk scoring and SLA breach forecasting from OS telemetry. Zero-allocation inference and SIMD-accelerated feature extraction for .NET services."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is CloudSealed.ML.Core different from ML.NET alone?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "An opinionated layer on top of ML.NET adding zero-allocation inference, SIMD feature extraction via ReadOnlySpan<float>, deterministic scoring, and prebuilt risk/SLA pipelines."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does CloudSealed.ML.Core support .NET Framework?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. .NET 6+ only due to Span<T> and modern SIMD intrinsics."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does zero-allocation inference mean?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The hot path from input to prediction allocates zero objects on the managed heap — no boxing, no LINQ, no new. Designed for services under GC pressure with strict p99 latency targets."
+      }
+    }
+  ]
+}
+</script>
+
+---
+
 ## 📜 License
 
 This project is licensed under the [MIT License](LICENSE).
