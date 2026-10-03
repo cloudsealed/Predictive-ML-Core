@@ -3,10 +3,9 @@ using CloudSealed.ML.Engine.Scoring;
 
 namespace CloudSealed.ML.Tests;
 
-// A explainability só vale se for fiel: cada score precisa ser exatamente a
-// soma (com teto) das contribuições que o breakdown declara. Se um dia o
-// analyzer somar um peso "escondido" que não aparece no breakdown, estes
-// testes quebram.
+// Explainability is only useful if it's accurate: each score must equal exactly
+// the sum (capped) of the contributions declared in the breakdown. If the
+// analyzer ever adds a "hidden" weight not reflected in the breakdown, these tests break.
 public class ScoreBreakdownTests
 {
     private readonly ArchitectureAnalyzer _analyzer = new();

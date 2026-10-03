@@ -164,8 +164,8 @@ public class ArchitectureAnalyzerTests
         var withCriticalScore = _analyzer.Analyze(new PredictArchitectureRequest { CompanyName = "Acme", Systems = withOneCritical })
             .OverallArchitectureScore;
 
-        // Média simples de 9 LOW + 1 CRITICAL diluiria o CRITICAL para ~10% do peso;
-        // a ponderação por criticidade deve puxar o score visivelmente mais para baixo.
+        // A naive average of 9 LOW + 1 CRITICAL would dilute the CRITICAL to ~10% weight;
+        // criticality weighting must pull the score noticeably lower.
         Assert.True(baselineScore - withCriticalScore > 10);
     }
 
