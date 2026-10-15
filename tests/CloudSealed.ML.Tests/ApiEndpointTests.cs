@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using CloudSealed.ML.Engine.Models;
+using CloudSealed.ML.Engine.Scoring;
 using Microsoft.AspNetCore.Mvc.Testing;
+
 
 namespace CloudSealed.ML.Tests;
 
@@ -173,4 +175,24 @@ public class ApiEndpointTests : IClassFixture<WebApplicationFactory<Program>>, I
         Assert.False(string.IsNullOrEmpty(body.PredictedSeverity));
         Assert.NotEmpty(body.ClassProbabilities);
     }
+
+    [Fact]
+    public async Task ForecastBilling_ReturnsPrediction()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/v1/forecast-billing", new BillingForecastRequest
+        {
+            DailySpends = new List<float> { 100f, 110f, 120f, 115f, 125f },
+            RemainingDays = 15,
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<CloudBillingForecaster.BillingPrediction>();
+        Assert.NotNull(body);
+        Assert.Equal(570f, body!.CurrentTotal);
+        Assert.True(body.ProjectedMonthEnd > 570f);
+        Assert.True(body.ConfidenceScore >= 0.90f);
+    }
 }
+

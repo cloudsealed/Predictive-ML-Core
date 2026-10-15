@@ -32,6 +32,17 @@ jobs:
       - name: Pack NuGet Package
         run: dotnet pack src/CloudSealed.ML.Engine/CloudSealed.ML.Engine.csproj -c Release -o ./dist
 
-      - name: Push to NuGet.org (Trusted Publishing / OIDC)
+      - name: Authenticate with NuGet (Trusted Publishing / OIDC)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: CloudSealed
+
+
+      - name: Push to NuGet.org
         run: |
-          dotnet nuget push ./dist/*.nupkg --source https://api.nuget.org/v3/index.json --skip-duplicate
+          dotnet nuget push ./dist/*.nupkg \
+            --api-key "${{ steps.login.outputs.NUGET_API_KEY || secrets.NUGET_API_KEY }}" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+

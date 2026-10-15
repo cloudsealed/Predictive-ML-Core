@@ -134,6 +134,30 @@ app.MapPost("/v1/predict-severity", (PredictSeverityRequest? request, HttpReques
     });
 });
 
+app.MapPost("/v1/forecast-billing", (BillingForecastRequest? request, HttpRequest httpRequest) =>
+{
+    if (!IsAuthorized(httpRequest))
+    {
+        return Results.Json(new { error = "X-Api-Key invalid or missing" }, statusCode: StatusCodes.Status401Unauthorized);
+    }
+
+    if (request is null || request.DailySpends is null || request.DailySpends.Count == 0)
+    {
+        return Results.BadRequest(new { error = "dailySpends is required and cannot be empty" });
+    }
+
+    var forecaster = new CloudBillingForecaster();
+    var prediction = forecaster.ForecastMonthEnd(request.DailySpends, request.RemainingDays);
+    return Results.Ok(prediction);
+});
+
 app.Run();
 
+public class BillingForecastRequest
+{
+    public List<float> DailySpends { get; set; } = new();
+    public int RemainingDays { get; set; } = 15;
+}
+
 public partial class Program { }
+
