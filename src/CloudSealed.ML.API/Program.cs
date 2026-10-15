@@ -151,12 +151,109 @@ app.MapPost("/v1/forecast-billing", (BillingForecastRequest? request, HttpReques
     return Results.Ok(prediction);
 });
 
+app.MapPost("/v1/predict-financial-blast-radius", (List<ServiceFinancialNode>? nodes, HttpRequest httpRequest) =>
+{
+    if (!IsAuthorized(httpRequest))
+    {
+        return Results.Json(new { error = "X-Api-Key invalid or missing" }, statusCode: StatusCodes.Status401Unauthorized);
+    }
+
+    if (nodes is null || nodes.Count == 0)
+    {
+        return Results.BadRequest(new { error = "nodes array is required and cannot be empty" });
+    }
+
+    var analyzer = new FinancialBlastRadiusAnalyzer();
+    var report = analyzer.Analyze(nodes);
+    return Results.Ok(report);
+});
+
+app.MapPost("/v1/evaluate-circuit-breaker", (CloudSealed.ML.Engine.Policies.FinancialCircuitBreakerPolicy.CircuitBreakerInput? input, HttpRequest httpRequest) =>
+{
+    if (!IsAuthorized(httpRequest))
+    {
+        return Results.Json(new { error = "X-Api-Key invalid or missing" }, statusCode: StatusCodes.Status401Unauthorized);
+    }
+
+    if (input is null)
+    {
+        return Results.BadRequest(new { error = "circuit breaker input is required" });
+    }
+
+    var policy = new CloudSealed.ML.Engine.Policies.FinancialCircuitBreakerPolicy();
+    var result = policy.Evaluate(input);
+    return Results.Ok(result);
+});
+
+app.MapPost("/v1/analyze-genai-tokens", (GenAITokenForensicsRequest? request, HttpRequest httpRequest) =>
+{
+    if (!IsAuthorized(httpRequest))
+    {
+        return Results.Json(new { error = "X-Api-Key invalid or missing" }, statusCode: StatusCodes.Status401Unauthorized);
+    }
+
+    if (request is null || request.Models is null || request.Models.Count == 0)
+    {
+        return Results.BadRequest(new { error = "models list is required and cannot be empty" });
+    }
+
+    var analyzer = new GenAITokenForensicsAnalyzer();
+    var report = analyzer.Analyze(request.Models, request.Rag);
+    return Results.Ok(report);
+});
+
+app.MapPost("/v1/evaluate-commitment-risk", (CommitmentPlanInput? input, HttpRequest httpRequest) =>
+{
+    if (!IsAuthorized(httpRequest))
+    {
+        return Results.Json(new { error = "X-Api-Key invalid or missing" }, statusCode: StatusCodes.Status401Unauthorized);
+    }
+
+    if (input is null)
+    {
+        return Results.BadRequest(new { error = "commitment plan input is required" });
+    }
+
+    var analyzer = new CommitmentRiskAnalyzer();
+    var report = analyzer.Analyze(input);
+    return Results.Ok(report);
+});
+
+app.MapPost("/v1/optimize-spot-fleet", (SpotFleetOptimizationRequest? request, HttpRequest httpRequest) =>
+{
+    if (!IsAuthorized(httpRequest))
+    {
+        return Results.Json(new { error = "X-Api-Key invalid or missing" }, statusCode: StatusCodes.Status401Unauthorized);
+    }
+
+    if (request is null || request.Requirement is null || request.Candidates is null || request.Candidates.Count == 0)
+    {
+        return Results.BadRequest(new { error = "requirement and candidates list are required" });
+    }
+
+    var engine = new SpotTerminationRiskEngine();
+    var report = engine.OptimizeFleet(request.Requirement, request.Candidates);
+    return Results.Ok(report);
+});
+
 app.Run();
 
 public class BillingForecastRequest
 {
     public List<float> DailySpends { get; set; } = new();
     public int RemainingDays { get; set; } = 15;
+}
+
+public class GenAITokenForensicsRequest
+{
+    public List<ModelUsageTelemetry> Models { get; set; } = new();
+    public RagPipelineTelemetry? Rag { get; set; }
+}
+
+public class SpotFleetOptimizationRequest
+{
+    public WorkloadRequirement Requirement { get; set; } = new();
+    public List<SpotPoolCandidate> Candidates { get; set; } = new();
 }
 
 public partial class Program { }
