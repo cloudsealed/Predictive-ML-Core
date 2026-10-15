@@ -1,0 +1,37 @@
+name: Publish to NuGet
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'cloudsealed'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build Release
+        run: dotnet build --no-restore -c Release
+
+      - name: Pack NuGet Package
+        run: dotnet pack src/CloudSealed.ML.Engine/CloudSealed.ML.Engine.csproj -c Release -o ./dist
+
+      - name: Push to NuGet.org (Trusted Publishing / OIDC)
+        run: |
+          dotnet nuget push ./dist/*.nupkg --source https://api.nuget.org/v3/index.json --skip-duplicate
